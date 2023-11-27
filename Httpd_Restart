@@ -1,0 +1,17 @@
+---
+- name: This for package instalation
+  hosts: all
+  become: true
+  tasks:
+   - name: Install Httpd
+     yum:
+       name: httpd
+       state: installed
+     notify: Start Service
+
+  handlers:
+   - name: Start Service
+     service:
+         name: httpd
+         state: restarted
+
