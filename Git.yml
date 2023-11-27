@@ -1,0 +1,9 @@
+---
+- name: This for package instalation
+  hosts: RHEL
+  become: true
+  tasks:
+   - name: Package using YUM
+     yum:
+       name: [ 'git', 'tree' ]
+       state: installed

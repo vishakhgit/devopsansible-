@@ -1,0 +1,22 @@
+---
+- name: Shell Output
+  hosts: all
+  become: true
+
+  #become_method: sudo
+  tasks:
+  - name: List command
+    shell: find /opt/ansible -name *.txt
+     register: Output
+     debug: Output
+    notify: 
+    - List on Anisble
+
+  handlers:
+   - name: List on Anisble 
+     shell: ls-l /opt/ansible/ 
+         register: LSOUT
+         debug: LSOUT
+
+
+

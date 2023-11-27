@@ -1,0 +1,9 @@
+---
+- hosts: all
+  tasks:
+  - name: show disk space
+    shell:
+      cmd: df -h
+    register: df
+  - debug:
+      var: df.stdout_lines

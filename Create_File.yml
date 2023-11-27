@@ -1,0 +1,9 @@
+---
+- name: Create file or dir
+  hosts: all
+  become: true
+  tasks:
+  - name: Create a file
+    file:
+      path: /opt/Vishu
+      state: touch

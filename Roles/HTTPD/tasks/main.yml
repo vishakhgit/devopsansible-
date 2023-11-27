@@ -1,0 +1,11 @@
+---
+# tasks file for HTTPD
+name: Install web server
+  ansible.builtin.yum:
+    name: "httpd"
+    state: present
+
+name: Install web server
+  ansible.builtin.yum:
+    name: "git"
+    state: present

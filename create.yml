@@ -1,0 +1,9 @@
+---
+- name: This first playbook 
+  hosts: all
+  become: true
+  vars_files: 
+    - NAME.txt
+  tasks:
+  - user: 
+      name: "{{ user }}"

@@ -1,0 +1,12 @@
+---
+- name: Copy playbook
+  hosts: all 
+  become: true 
+  tasks:
+  -  name: Location from which  copied 
+     copy:
+      src: /opt/ansible/index.html
+      dest: /var/www/html
+      mode: 0755
+      owner: root
+      group: ansadmin

@@ -1,0 +1,11 @@
+---
+- name: Import task
+  hosts: all
+  become: true 
+  
+  tasks:
+   - name: Include the example role
+     include_role:
+        name: Install web server 
+#        name:Install web server
+
