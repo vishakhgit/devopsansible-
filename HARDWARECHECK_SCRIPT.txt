@@ -1,0 +1,58 @@
+echo -e "\tServer Name               : `nslookup \`hostname\` | grep Name | cut -d":" -f2 | sed -e 's/\t//'`" > /root/server_info.txt
+echo -e "\tPublic IP Address         : `nslookup \`hostname\` | grep Address | tail -1 | cut -d":" -f2 | sed -e 's/ //'`" >> /root/server_info.txt
+
+hardware=`/usr/sbin/dmidecode | grep -m1 Manufacturer | cut -d":" -f2 | cut -d" " -f2 | cut -d"," -f1`
+
+if [[ $hardware != "VMware" ]]; then
+
+     echo -e "\tBackup IP Address         : `nslookup \`hostname\`-b | grep Address | tail -1 | cut -d":" -f2 | sed -e 's/ //'`\t\t(`nslookup \`hostname\`-b | grep Name | cut -d":" -f2 | sed -e 's/\t//'`)" >> /root/server_info.txt
+     echo -e "\tiLO IP Address            : `nslookup \`hostname\`-r | grep Address | tail -1 | cut -d":" -f2 | sed -e 's/ //'`\t\t(`nslookup \`hostname\`-r | grep Name | cut -d":" -f2 | sed -e 's/\t//'`)" >> /root/server_info.txt
+     echo -e "\tInterconnect IP Address   : `nslookup \`hostname\`-priv | grep Address | tail -1 | cut -d":" -f2 | sed -e 's/ //'`\t\t(`nslookup \`hostname\`-priv | grep Name | cut -d":" -f2 | sed -e 's/\t//'`)" >> /root/server_info.txt
+
+
+fi
+
+echo -e "" >> /root/server_info.txt
+echo -e "\tServer Operating System   : `cat /etc/redhat-release`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt
+echo -e "\tServer Make/Model         : `/usr/sbin/dmidecode -t system | grep "Product Name:" | cut -d":" -f2 | sed -e 's/ //'`" >> /root/server_info.txt
+echo -e "\tServer Serial Number      : `/usr/sbin/dmidecode -t system | grep -m1 "Serial Number:" | cut -d":" -f2 | sed -e 's/ //'`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt
+echo -e "\tNumber of CPU(s)          : `/usr/sbin/dmidecode -t processor | grep "Status: Populated" | wc -l`" >> /root/server_info.txt
+echo -e "\tCPU Model/Speed           : `/usr/sbin/dmidecode -t processor | grep -m1 "Version" | cut -d":" -f2 | sed -e 's/ //'`" >> /root/server_info.txt
+echo -e "\tCPU Core(s) per CPU       : `/usr/sbin/dmidecode -t processor | grep -m1 "Core Count:" | cut -d":" -f2 | sed -e 's/ //'`" >> /root/server_info.txt
+echo -e "\tTotal Core(s)             : `/usr/sbin/dmidecode -t processor | grep "Core Count:" | cut -d":" -f2 | sed -e 's/ //g' | awk '{s+=$1} END {print s}'`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt
+echo -e "\tServer Memory             : `/usr/sbin/dmidecode -t memory | grep -v "Size: No" | grep "Size" | cut -d":" -f2 | cut -d" " -f2 | awk '{s+=$1} END {print s "GB"}'`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt
+
+hardware=`/usr/sbin/dmidecode | grep -m1 Manufacturer | cut -d":" -f2 | cut -d" " -f2 | cut -d"," -f1`
+
+if [[ $hardware != "VMware" ]]; then
+
+     echo -e "\tServer Internal Controller: `cat /proc/driver/cciss/* | grep cciss0 | cut -d":" -f2 | sed -e "s/ //"`" >> /root/server_info.txt
+     echo -e "\tServer Internal Storage   : `cat /proc/driver/cciss/* | grep cciss/ | cut -d":" -f2 | sed -e 's/\t//' | cut -f1 | sed -e 's/ //'`" >> /root/server_info.txt
+     echo -e "\tServer Raid Configuration : `cat /proc/driver/cciss/* | grep cciss/ | cut -d":" -f2 | sed -e 's/\t//' | cut -f2`" >> /root/server_info.txt
+     echo -e "" >> /root/server_info.txt
+
+     count=0
+     for fc_host in `ls -1 /sys/class/fc_host`
+          do
+               count=$((count+1))
+               sudo /sbin/powermt display | grep "`echo $fc_host | awk '{sub(/host/,"")}; {print $0,"lpfc"}'`" > /dev/null 2>&1
+               if [[ $? -eq 0 ]]; then
+                    path_status="Active"
+               else
+                    path_status="Inactive"
+               fi
+
+               echo -e "\tFiber Connector #$count        : "  >> /root/server_info.txt
+               echo -e "\t     Make/Model           : `cat /sys/class/scsi_host/$fc_host/modeldesc` (`cat /sys/class/scsi_host/$fc_host/modelname`)"  >> /root/server_info.txt
+               echo -e "\t     Firmware Version     : `cat /sys/class/scsi_host/$fc_host/fwrev`"  >> /root/server_info.txt
+               echo -e "\t     Driver Version       : `cat /sys/class/scsi_host/$fc_host/lpfc_drvr_version`"  >> /root/server_info.txt
+               echo -e "\t     World Wide Port Name : `cat /sys/class/fc_host/$fc_host/node_name | sed -e 's/0x//' | sed -e 's/^\(.\{2\}\)/\1:/' -e 's/^\(.\{5\}\)/\1:/' -e 's/^\(.\{8\}\)/\1:/' -e 's/^\(.\{11\}\)/\1:/' -e 's/^\(.\{14\}\)/\1:/' -e 's/^\(.\{17\}\)/\1:/' -e 's/^\(.\{20\}\)/\1:/'`"  >> /root/server_info.txt
+               echo -e "\t     HBA Status           : `cat /sys/class/fc_host/$fc_host/port_state`"  >> /root/server_info.txt
+         done
+fi
+cat /root/server_info.txt>/tmp/server_info.txt
+chmod 755 /tmp/server_info.txt

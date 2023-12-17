@@ -1,0 +1,72 @@
+echo -e "***Pre_Audit***"
+id artem_x_minaev_nd
+id arun_kumar_x_jayaprakash_nd
+id kailash_x_selvaraj_nd
+id karthik_kumar_x_somasundaram_nd
+id ken_c_toghia_nd
+id madanagopal_x_ragupathy_nd
+id pradeep_kumar_x_velusamy_nd
+id vitali_x_fedarau_nd
+id zeeshan_a_ratani_nd
+egrep -i "artem|jayaprakash|kailash|somasundaram|toghia|madanagopal|velusamy|vitali|zeeshan" /etc/passwd
+egrep -i "artem|jayaprakash|kailash|somasundaram|toghia|madanagopal|velusamy|vitali|zeeshan" /etc/group
+
+ls -lthra /home/arun_kumar_x_jayaprakash_nd
+userdel -f arun_kumar_x_jayaprakash_nd
+groupdel arun_kumar_x_jayaprakash_nd
+rm -rf /home/arun_kumar_x_jayaprakash_nd
+
+ls -lthra /home/kailash_x_selvaraj_nd
+userdel -f kailash_x_selvaraj_nd
+groupdel kailash_x_selvaraj_nd
+rm -rf /home/kailash_x_selvaraj_nd
+
+ls -lthra /home/karthik_kumar_x_somasundaram_nd
+userdel -f karthik_kumar_x_somasundaram_nd
+groupdel karthik_kumar_x_somasundaram_nd
+rm -rf /home/karthik_kumar_x_somasundaram_nd
+
+ls -lthra /home/ken_c_toghia_nd
+userdel -f ken_c_toghia_nd
+groupdel ken_c_toghia_nd
+rm -rf /home/ken_c_toghia_nd
+
+ls -lthra /home/madanagopal_x_ragupathy_nd
+userdel -f madanagopal_x_ragupathy_nd
+groupdel madanagopal_x_ragupathy_nd
+rm -rf /home/madanagopal_x_ragupathy_nd
+
+ls -lthra /home/pradeep_kumar_x_velusamy_nd
+userdel -f pradeep_kumar_x_velusamy_nd
+groupdel pradeep_kumar_x_velusamy_nd
+rm -rf /home/pradeep_kumar_x_velusamy_nd
+
+ls -lthra /home/vitali_x_fedarau_nd
+userdel -f vitali_x_fedarau_nd
+groupdel vitali_x_fedarau_nd
+rm -rf /home/vitali_x_fedarau_nd
+
+ls -lthra /home/zeeshan_a_ratani_nd
+userdel -f zeeshan_a_ratani_nd
+groupdel zeeshan_a_ratani_nd
+rm -rf /home/zeeshan_a_ratani_nd
+
+echo -e "***Post_Audit***"
+id kailash_x_selvaraj_nd
+id karthik_kumar_x_somasundaram_nd
+id ken_c_toghia_nd
+id madanagopal_x_ragupathy_nd
+id pradeep_kumar_x_velusamy_nd
+id vitali_x_fedarau_nd
+id zeeshan_a_ratani_nd
+egrep -i "artem|jayaprakash|kailash|somasundaram|toghia|madanagopal|velusamy|vitali|zeeshan" /etc/passwd
+egrep -i "artem|jayaprakash|kailash|somasundaram|toghia|madanagopal|velusamy|vitali|zeeshan" /etc/group
+ls -lthra /home/artem_x_minaev_nd
+ls -lthra /home/arun_kumar_x_jayaprakash_nd
+ls -lthra /home/kailash_x_selvaraj_nd
+ls -lthra /home/karthik_kumar_x_somasundaram_nd
+ls -lthra /home/ken_c_toghia_nd
+ls -lthra /home/madanagopal_x_ragupathy_nd
+ls -lthra /home/pradeep_kumar_x_velusamy_nd
+ls -lthra /home/vitali_x_fedarau_nd
+ls -lthra /home/zeeshan_a_ratani_nd

@@ -1,0 +1,60 @@
+#############
+# VARIABLES #
+#############
+H=$(hostname)
+ActiveHBA=$(cat /sys/class/fc_host/host{0..10}/port_state 2>/dev/null | grep -i online | wc -l)
+DIR=/etc/opt/emcpower
+FILE=/etc/multipath.conf
+
+#############
+# FUNCTIONS #
+#############
+
+Check_ID() {
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo -e "[x]\t$ID, you must be root to run this program."
+   exit 1
+fi
+}
+
+Check_path() {
+#Check for multipath status
+#if grep -q -i "release 7" /etc/redhat-release
+if [[ -d "$DIR" ]]; then
+PP_paths=$(/sbin/powermt display  | grep -i lpfc | wc -l)
+optimal=$(/sbin/powermt display  | grep -i optimal | wc -l)
+   if [ "$ActiveHBA" == "$optimal" ]
+    then
+      echo -e "\033[0;32m "$H PowerPath health status success""
+ else
+      echo -e "\033[31m "$H PowerPath health status fail""
+   fi
+elif [[ -f "$FILE" ]]; then
+multipath_stats=$(multipath -ll | grep -i status | uniq | wc -l)
+Lun=$(multipathd show maps format "%n %w %d %s" | grep -v HP_iLO |  tail -1 | awk '{print $1}')
+running_paths=$(multipath -ll $Lun | grep -i running | wc -l)
+total=$(($ActiveHBA * 2))
+string=$(multipath -ll "$Lun" | grep -i "active ready running" | awk '{print $5 $6 $7}' | uniq)
+multipath_status=$(multipath -ll | grep -i status |uniq)
+   if [[ "$?" -eq "0" ]]; then
+     #if [[ $running_paths == $total ]]; then
+      if [ "$string" == "activereadyrunning" ]; then
+         echo -e "\033[0;32m "$H multipath health status success""
+    else
+         echo -e "\033[31m "$H multipath health status fail""
+     fi
+    fi
+else
+        echo -e "\033[31m "$H PowerPath/multipath is not installed on the server""
+fi
+}
+#############################################
+# Start
+#############################################
+Check_ID
+Check_path
+exit 0
+#############################################
+# End
+#############################################

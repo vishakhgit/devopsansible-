@@ -1,0 +1,41 @@
+[root@fldcvpsla16886 oracle]# cat format_lun.sh
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L152
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L153
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L154
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L155
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L156
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L157
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L158
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L159
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L160
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L161
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L162
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L163
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L164
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L165
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L166
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L167
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L168
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L169
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L170
+echo -e "n\np\n1\n\n\nx\nb\n1\n2048\nw\n" | /sbin/fdisk /dev/mapper/ASMdp04L171
+kpartx -a /dev/mapper/ASMdp04L152
+kpartx -a /dev/mapper/ASMdp04L153
+kpartx -a /dev/mapper/ASMdp04L154
+kpartx -a /dev/mapper/ASMdp04L155
+kpartx -a /dev/mapper/ASMdp04L156
+kpartx -a /dev/mapper/ASMdp04L157
+kpartx -a /dev/mapper/ASMdp04L158
+kpartx -a /dev/mapper/ASMdp04L159
+kpartx -a /dev/mapper/ASMdp04L160
+kpartx -a /dev/mapper/ASMdp04L161
+kpartx -a /dev/mapper/ASMdp04L162
+kpartx -a /dev/mapper/ASMdp04L163
+kpartx -a /dev/mapper/ASMdp04L164
+kpartx -a /dev/mapper/ASMdp04L165
+kpartx -a /dev/mapper/ASMdp04L166
+kpartx -a /dev/mapper/ASMdp04L167
+kpartx -a /dev/mapper/ASMdp04L168
+kpartx -a /dev/mapper/ASMdp04L169
+kpartx -a /dev/mapper/ASMdp04L170
+kpartx -a /dev/mapper/ASMdp04L171

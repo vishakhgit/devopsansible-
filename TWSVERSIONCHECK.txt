@@ -1,0 +1,11 @@
+HOST=$(hostname)
+#echo "HOSTNAME="$HOST
+LOGVER=$(rpm -qa --last | tac | grep -i log4j|  awk '{for(i=3;i<=NF;i++) printf $i" "; print ""}')
+log4j=$(rpm -q --queryformat "%{version}\n" log4j)
+#echo "log4j version="$log4j
+TWSVER=$(rpm -qa --last | tac | grep -i tweagent |awk '{for(i=3;i<=NF;i++) printf $i" "; print ""}')
+TWeagent=$(rpm -q --queryformat "%{version}\n" TWeagent)
+#echo "TWeagent Version="$TWeagent
+
+echo "$HOST|$log4j|$LOGVER|$TWeagent|$TWSVER"
+

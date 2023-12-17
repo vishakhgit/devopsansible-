@@ -1,0 +1,178 @@
+# Function to test that the user is root
+Check_ID()
+{
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo "$ID, you must be root to run this program."
+   exit 1
+fi
+}
+
+# Function to check and install samba-client if missing
+RPCClient()
+{
+PackageName="samba-client"
+RPCConfigFile="/usr/bin/rpcclient"
+if rpm -qa | grep -i $PackageName > /dev/null; then
+   if [ -f $RPCConfigFile ]; then
+      echo "$PackageName is installed and $RPCConfigFile is in place" > /dev/null
+   else
+#      /net/cn-flor-nas01-prod/data/TPR/WDW/Vol021/WDW-HPSA/Scripts/App_Installs/install_from_current.ksh -i $PackageName > /dev/null
+        yum install -y $PackageName > /dev/null
+          echo -e "$PackageName is installed on $HN" > /dev/null
+   fi
+else
+#   /net/cn-flor-nas01-prod/data/TPR/WDW/Vol021/WDW-HPSA/Scripts/App_Installs/install_from_current.ksh -i $PackageName > /dev/null
+        yum install -y $PackageName > /dev/null
+   echo -e "$PackageName is installed on $HN" > /dev/null
+fi
+}
+
+# Function to declare Variables
+DeclareVariables()
+{
+base=$(echo $0| xargs /usr/bin/dirname)
+HN=$(hostname)
+SUDOC=0
+EXCLUDE=$(echo "^root|^sync|^shutdown|^halt|^news")
+ACCESS=$(awk -F = '/^require_membership_of/ {print $2}' /etc/security/pam_winbind.conf| sed 's/,/\n/g'| tr '[:upper:]' '[:lower:]'| sort -u)
+if [ -z $ACCESS ]; then
+  ACCESS=$(awk -F = '/^simple_allow/ {print $2}' /etc/sssd/sssd.conf| sed 's/,/\n/g'| sed 's/\s//g' | tr '[:upper:]' '[:lower:]'| sort -u)
+fi
+DOMAIN=$(grep -i workgroup /etc/samba/smb.conf| awk '{print $NF}')
+DOMAIN_CONTROLLER=$(net ads info 2>/dev/null | awk -F": " '/LDAP server name/ {print $2}')
+net ads info > /dev/null
+if [ "$?" -ne 0 ]; then
+  DOMAIN_CONTROLLER="sm-flor-xdc39.wdw.disney.com"
+fi
+}
+
+# Function to audit local users
+localUsers() {
+for USER in `grep -v nologin /etc/passwd| awk -F: '{print $1}'| grep -vE "$EXCLUDE"`
+do
+ GROUPNAME=$(groups $USER| awk '{print $3}')
+ LOGIN=$(utmpdump /var/log/wtmp 2>/dev/null| grep $USER| tail -1| awk -F[ '{print $9}'| sed 's/]//g')
+ if [ -z $LOGIN ]; then
+   LOGIN=$(echo "No login history.")
+ fi
+ SUDO=$(sudo -l -U $USER 2>/dev/null| sed -n -e "1,/User ${USER} may run the following commands on/!p"| xargs)
+ if [ -z $SUDO ]; then
+  SUDO=$(echo "No sudo.")
+ fi
+ echo "|$HN|$GROUPNAME|$USER|$LOGIN|$SUDO"
+done
+
+}
+
+# Function to expand users in a group
+Expand_GROUP() {
+unset users
+GROUP=$1
+DOMAIN_SID=$(wbinfo -n $1 2>/dev/null | cut -d- -f1-7 2>/dev/null)
+GROUP_SID=$(wbinfo -n $GROUP 2>/dev/null)
+
+if [ "$?" -ne 0 ]; then
+ users=$(getent group $GROUP | sed 's/.*://' | sed 's/,/ /g')
+else
+  grpid=$(echo $GROUP_SID| sed "s/${DOMAIN_SID}-//"| awk '{print $1}')
+  RIDLIST=$(rpcclient -d 10 -P -W WDW -c "querygroupmem $grpid" $DOMAIN_CONTROLLER | grep -w rid:|  tr -s '\t' ' ' | sed 's/^ rid:\[0x//g' | sed 's/\] attr:\[0x7\]//g')
+  for i in $RIDLIST; do
+   user=$(wbinfo -s ${DOMAIN_SID}-`printf %d 0x${i}` 2>/dev/null| awk '{print $1}'| cut -d+ -f2| tr '[:upper:]' '[:lower:]')
+   users=$(echo "$users $user")
+  done
+
+  if [ -z $RIDLIST ]; then
+   users=$(grep -w $GROUP $base/INPUT/groups.out| awk -F\| '{print $2}')
+  fi
+fi
+}
+
+# Function to get all users tied to an AD group granted login access
+Create_GUSERS() {
+unset GUSERS
+if getent group $GROUP >/dev/null; then
+ Expand_GROUP $GROUP
+else
+ echo "|$HN|$GROUP|||NOT a valid group"
+ unset users
+fi
+
+gusers=$users
+for GUSER in $gusers
+do
+ if getent passwd $GUSER  >/dev/null; then
+  GUSERS=$(echo "$GUSERS $GUSER")
+ #
+ # If the user is a group, then it is embeded.
+ #
+ elif getent group $GUSER> /dev/null; then
+  DONE=NO
+  PASS=0
+  EMBEDGS=$GUSER
+  until [ $DONE = "YES" -o $PASS = "5" ]
+  do
+   let PASS=$PASS+1
+   for EMBEDG in $EMBEDGS
+   do
+    Expand_GROUP $EMBEDG
+    export EMBEDGS=$(echo $EMBEDGS| sed "s/$EMBEDG//g")
+    for EMBEDUSER in $users
+    do
+     if getent passwd $EMBEDUSER  >/dev/null; then
+      GUSERS=$(echo "$GUSERS $EMBEDUSER")
+     elif getent group $EMBEDUSER> /dev/null; then
+      EMBEDGS=$(echo "$EMBEDGS $EMBEDUSER")
+     fi
+    done
+    if [ -z $EMBEDGS ]; then
+     DONE=YES
+    fi
+   done
+  done
+ else
+  GUSERS=$(echo "$GUSERS $GUSER")
+ fi
+done
+}
+
+# Function to get users tied to a group
+Audit_GUSERS() {
+for USER in `echo $GUSERS| sed 's/\s/\n/g'| sort -u`
+do
+ if [ ! -z $USER ]; then
+  LOGIN=$(utmpdump /var/log/wtmp 2>/dev/null| grep $USER| tail -1| awk -F[ '{print $9}'| sed 's/]//g')
+  if [ -z $LOGIN ]; then
+   ADUTEST=$(getent passwd $USER| wc -l)
+   if [ -z $LOGIN ] && [ $ADUTEST -ne "1" ]; then
+    LOGIN=$(echo "Unix Credentials NOT enabled")
+   elif [ -z $LOGIN ] && [ $ADUTEST -eq 1 ]; then
+    LOGIN=$(echo "No login history.")
+   fi
+  fi
+ fi
+ SUDO=$(sudo -l -U $USER 2>/dev/null| sed -ne '1,/User.*may run the following commands on.*/!p' | xargs)
+ if [ -z $SUDO ]; then
+  SUDO=$(echo "No sudo.")
+ fi
+ echo "|$HN|$GROUP|$USER|$LOGIN|$SUDO"
+done
+}
+
+#############################################
+# Start
+#############################################
+Check_ID
+DeclareVariables
+#WinbindAuth
+RPCClient
+localUsers
+for GROUP in $ACCESS
+do
+ Create_GUSERS
+ Audit_GUSERS
+done
+#############################################
+# End
+#############################################
+echo "|DONE|"

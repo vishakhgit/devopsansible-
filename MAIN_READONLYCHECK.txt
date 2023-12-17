@@ -1,0 +1,60 @@
+#-------------------------------------------------------------------------------
+# Function to test that the user is root.
+#
+Check_ID() {
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo "{ID}, you must be root to run this program."
+  exit 1
+fi
+}
+
+#----------------------------------------------------------------------------
+# Function to check read only file system on root directory
+#
+Check_root_FS() {
+touch /touchmetest.out >/dev/null 2>&1
+if [[ $? > "0" ]]; then
+ echo "\tDetected root direcorty read-only mode, check server health"
+ exit 1
+fi
+rm /touchmetest.out
+}
+
+#----------------------------------------------------------------------------
+# Function to check read only file system on tmp directory
+#
+Check_tmp_FS() {
+touch /tmp/touchmetest.out >/dev/null 2>&1
+if [[ $? > "0" ]]; then
+ echo "\tDetected tmp direcorty read-only mode, check server health"
+ exit 1
+fi
+rm /tmp/touchmetest.out
+}
+
+#----------------------------------------------------------------------------
+# Function to check read only file system
+#
+Check_FS() {
+for FS in `df -Phl| awk '{print $NF}'| grep -vE "^on|^/boot|^/dev/shm|^/sys/fs/cgroup|/$"`
+do
+ touch $FS/touchmetest.out >/dev/null 2>&1
+ if [[ $? > "0" ]]; then
+  echo "\tDetected $FS as read-only mode, check server health"
+  exit 1
+ fi
+ rm $FS/touchmetest.out
+done
+}
+
+#############################################
+# Start
+#############################################
+Check_ID
+Check_root_FS
+Check_tmp_FS
+Check_FS
+#############################################
+# End
+#############################################

@@ -1,0 +1,33 @@
+Check_ID() {
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo -e "[x]\t$ID, you must be root to run this program."
+   exit 1
+fi
+}
+
+echo "Enter Required ORACLE Psuedo Name to start:"
+#for example ASMdp04L001
+
+read PsuedoName
+psuedo=$(printf $PsuedoName | head -c 8)
+number=$(printf $PsuedoName | tail -c 3)
+echo "Enter the LUN Details File Path:"
+
+read LUNInfo
+
+for i in `cat $LUNInfo`
+do
+     echo "        multipath {"
+     echo "                wwid 3$i"
+
+     echo "                alias $psuedo$number "
+
+temp=$((10#$number+1))
+number=$(printf "%03g" $temp)
+ echo "        }"
+done
+#############################################
+# End
+#############################################
+

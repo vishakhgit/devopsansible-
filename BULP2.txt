@@ -1,0 +1,42 @@
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NOCOLOR='\033[0m'
+#echo "$1"
+echo " "
+echo "Server,FQDN,VCenter,DataCenter,Cluster,PingStatus"
+for i in $*
+do
+#echo "$i"
+
+#line=`cat /net/cn-flor-nas01-prod.wdw.disney.com/data/TPR/WDW/Vol005/WDPRTHome/M/MADHM008/madhm008/SCRIPTS/VMinventory/SearchVM.list|grep -i $i`
+line=`cat /net/cn-flor-nas01-prod.wdw.disney.com/data/TPR/WDW/Vol021/WDW-HPSA/Scripts/Infraopsl1/SearchVM.list|grep -i $i`
+#echo $line
+
+Fqdn=`nslookup $i |grep -w Name|awk -F: '{print $2}'|xargs`
+VCenter=`echo $line|awk -F "-->" '{print $1}'|tr -d " "`
+#echo -e "VCenter =" "${GREEN} $VCenter ${NOCOLOR}"
+#echo "VCenter = $VCenter"
+DataCenter=`echo $line|awk -F "-->" '{print $2}'|tr '[a-z]' '[A-Z]'|xargs`
+#echo "DataCenter = $DataCenter"
+Cluster=`echo $line|awk -F "-->" '{print $3}'|tr '[a-z]' '[A-Z]'|xargs`
+#echo "Cluster = $Cluster"
+
+#### Check Ping Status ####
+
+ping -c 1 $i >/dev/null
+if [ $? = 0 ]; then
+#PingStatus="Pingable"
+PingStatus="Pingable"
+PingStatus_C=`echo -e "${GREEN}$PingStatus${NOCOLOR}"`
+#Uptime=`ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no $i uptime|awk -F, '{print $1,$2}' 2>/dev/null`
+else
+PingStatus="Not Pingable"
+PingStatus_C=`echo -e "${RED}$PingStatus${NOCOLOR}"`
+Uptime=NA
+fi
+
+
+echo $i,$Fqdn,$VCenter,$DataCenter,$Cluster,$PingStatus_C
+
+
+done

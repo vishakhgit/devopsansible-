@@ -1,0 +1,119 @@
+#############
+# VARIABLES #
+#############
+RHEL=$(rpm -q --whatprovides /etc/redhat-release| tail -1| cut -d- -f4| cut -c1)
+DIR=/sys/firmware/efi
+#FILE=/boot/efi/EFI/redhat/grub.cfg
+EMC=$(rpm -q EMCpower.LINUX | tail -1 |  cut -d- -f1)
+MULTI=$(rpm -q device-mapper-multipath | tail -1 |  cut -d- -f3)
+POWERPATH=EMCpower.LINUX
+MULTIPATH=multipath
+
+#############
+# FUNCTIONS #
+#############
+
+Check_ID() {
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo -e "[x]\t$ID, you must be root to run this program."
+   exit 1
+fi
+}
+
+Rebuild_Grub() {
+##Backup configuration files.
+cp -p /boot/grub2/grub.cfg /boot/grub2/grub.cfg.$(date +%y%m%d_%I%M_%p)
+cp -p /boot/efi/EFI/redhat/grub.cfg /boot/efi/EFI/redhat/grub.cfg.$(date +%y%m%d_%I%M_%p)
+
+##BIOS-based machines: old blade servers are configured with BIOS, check on server and iLO.
+#grub2-mkconfig -o /boot/grub2/grub.cfg
+
+##UEFI-based machines: most of the DL servers are configured with UEFI, check on server and iLO.
+#grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+
+#if [ -f "$FILE" ]; then
+#    echo -e "File $FILE exists, this server is on UEFI boot, rebuilding grub..."
+#    grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+#    echo -e "Rebuild UEFI grub completed successful, please work with database team to stop databases and server reboot."
+#else
+#    echo "File $FILE does not exist, this server is on BIOS boot, rebuilding grub..."
+#    grub2-mkconfig -o /boot/grub2/grub.cfg
+#    echo -e "Rebuild BIOS grub completed successful, please work with database team to stop databases and server reboot."
+#fi
+
+if [ -d "$DIR" ]; then
+   echo -e "Directory $DIR exists, this server is on UEFI boot, rebuilding grub..."
+   grub2-mkconfig -o /boot/efi/EFI/redhat/grub.cfg
+   echo -e "Rebuild UEFI grub completed successful, please work with database team to stop databases and server reboot."
+ else
+   echo "Directory $DIR does not exist, this server is on BIOS boot, rebuilding grub..."
+   grub2-mkconfig -o /boot/grub2/grub.cfg
+   echo -e "Rebuild BIOS grub completed successful, please work with database team to stop databases and server reboot."
+fi
+}
+
+##Validate THP settings before changes
+#cat /sys/kernel/mm/transparent_hugepage/enabled
+#grep -i hugepage /proc/cmdline /etc/grub*
+#grep -i anonhugepages /proc/meminfo
+
+Check_path() {
+##Validate redhat version
+if [ $RHEL -eq 7 ]; then
+  if [[ $EMC = $POWERPATH || $MULTI = $MULTIPATH ]]; then
+    echo -e "$EMC or $MULTI running on server, allowed to update transparent hugepage."
+##Verify and update transparent hugepage on grub configuration
+      grep -q -F 'transparent' /etc/default/grub
+        if [ $? -ne 0 ]; then
+          cp -p /etc/default/grub /etc/default/grub.$(date +%y%m%d_%I%M_%p)
+          sed -i -e '/GRUB_CMDLINE_LINUX/ s/rd.shell=0/rd.shell=0 transparent_hugepage=never/' /etc/default/grub
+          grep -q -F 'PROBER' /etc/default/grub
+            if [ $? -ne 0 ]; then
+              echo -e "GRUB_DISABLE_OS_PROBER=true" >> /etc/default/grub
+            fi
+          Rebuild_Grub
+        fi
+   else
+     echo -e "Server is not configured with PowerPath or Multipath, no changes to transparent hugepage."
+   fi
+ else
+   echo -e "Error: Don't run RedHat 7 script on RedHat $RHEL Operating System"
+fi
+}
+
+##Validate THP settings before reboot
+#cat /sys/kernel/mm/transparent_hugepage/enabled
+#grep -i hugepage /proc/cmdline /etc/grub*
+#grep -i anonhugepages /proc/meminfo
+
+
+##Stop the databases - Engage database team.
+#export CRS_HOME=`grep ASM /etc/oratab |awk -F ":" '{ print $2 }' `
+#$CRS_HOME/bin/crsctl check crs
+#$CRS_HOME/bin/crsctl stop crs -f
+#$CRS_HOME/bin/crsctl check crs
+
+##Reboot server
+#shutdown -r now
+
+##Validate THP disable after reboot
+##Check for brackets on never, example: always madvise [never]
+#cat /sys/kernel/mm/transparent_hugepage/enabled
+#grep -i hugepage /proc/cmdline /etc/grub*
+##Check for AnonHugePages: 0 kB after server reboot
+#grep -i anonhugepages /proc/meminfo
+
+##Validate databases - Engage database team
+#export CRS_HOME=`grep ASM /etc/oratab |awk -F ":" '{ print $2 }' `
+#$CRS_HOME/bin/crsctl check crs
+
+#############################################
+# Start
+#############################################
+Check_ID
+Check_path
+exit 0
+#############################################
+# End
+#############################################

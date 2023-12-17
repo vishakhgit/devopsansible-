@@ -1,0 +1,10 @@
+echo -e "\tServer Name               : `nslookup \`hostname\` | grep Name | cut -d":" -f2 | sed -e 's/\t//'`" > /root/server_info.txt
+echo -e "\tPublic IP Address         : `nslookup \`hostname\` | grep Address | tail -1 | cut -d":" -f2 | sed -e 's/ //'`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt
+echo -e "\tServer Operating System   : `cat /etc/redhat-release`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt
+echo -e "\tServer Make/Model         : `/usr/sbin/dmidecode -t system | grep "Product Name:" | cut -d":" -f2 | sed -e 's/ //'`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt
+echo -e "\tNumber of CPU(s)          : `/usr/sbin/dmidecode -t processor | grep "Status: Populated" | wc -l`" >> /root/server_info.txt
+echo -e "\tServer Memory             : `cat /proc/meminfo | grep MemTotal | cut -d":" -f2 | sed 's/ //g;s/kB//g' | awk '{s+=$1} END {printf "%.0fGB", s/1024/1000}'`" >> /root/server_info.txt
+echo -e "" >> /root/server_info.txt

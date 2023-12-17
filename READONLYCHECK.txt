@@ -1,0 +1,38 @@
+FqDn=`nslookup $SeRVeR|grep "Name:"|awk '{print $2}'`
+
+if [ $SeRVeR == "fldcvpsla23021" -o $SeRVeR == "fldcvpsla23022" -o $SeRVeR == "fldcvpsla23023" -o $SeRVeR == "caanvpsla23577" -o $SeRVeR == "caanvpsla23578" -o $SeRVeR == "fldcvpsla23473" -o $SeRVeR == "fldcvpsla23495" ]; then
+echo -e "$SeRVeR |OKTA Jump Server"
+
+elif [[ $SeRVeR == *"lp"* ]]; then
+echo -e "$SeRVeR |Appliance Server"
+elif [[ $SeRVeR == *"w"* ]]; then
+echo -e "$SeRVeR |Windows Server"
+elif [[ $FqDn == *"swna"* ]]; then
+echo -e "$SeRVeR |SWNA Domain Server"
+elif [[ $FqDn == *"idmz"* ]]; then
+echo -e "$SeRVeR |IDMZ Domain Server"
+
+else
+
+ssh -q -o BatchMode=yes -o StrictHostKeyChecking=no $SeRVeR uptime > /dev/null
+Result=`echo $?`
+#echo "Result is $Result"
+if [ $Result == 0 ]; then
+ssh -q -t -o BatchMode=true -o StrictHostKeyChecking=no $SeRVeR "sudo /net/cn-flor-nas01-prod.wdw.disney.com/data/TPR/WDW/Vol005/WDPRTHome/M/MADHM008/madhm008/SCRIPTS/NewFolder/check-readonly.sh"
+#ssh -q -t -o BatchMode=yes $SeRVeR "sudo /net/cn-flor-nas01-prod.wdw.disney.com/data/TPR/WDW/Vol005/WDPRTHome/M/MADHM008/madhm008/SCRIPTS/NewFolder/check-readonly.sh"
+rESULT=`echo $?`
+#echo "Result is $rESULT"
+if [ $rESULT == 0 ]; then
+echo -e "$SeRVeR |Clean"
+else
+echo -e "$SeRVeR |Definitely ReadOnly FS"
+fi
+
+else
+echo -e "$SeRVeR |Login issue or ReadOnly FS"
+
+fi
+
+fi
+
+done

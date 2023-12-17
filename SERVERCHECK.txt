@@ -1,0 +1,121 @@
+echo -e "\n **********************  SERVER CHECK __`hostname`***************************************\e\n"
+#echo "************************ENTER ONE OF THE BELOW OPTION *************************************\n"
+
+echo -e" ***********************ENTER  ONE OF THE BELOW OPTION *********************************"
+
+echo -e "\n1.CPU Usage \n2.Memory \n3.Swap space \n4.Filesystem Status \n5.Last 10 patches \n6.Service Status \n7.Reboot& OS  Details \n8.Readonly\n"
+
+echo -n " Please Enter the Choice: "
+read num
+green='\e[1;32m%s\e[0m\n'
+magenta='\e[1;35m%s\e[0m\n'
+cyan='\e[1;36m%s\e[0m\n'
+echo -e "\n********************************************************\n"
+
+case "$num" in
+    "1") echo -e  "\n*********  CPU IDLE & Top Consuming Process  *****\n"
+          printf "$green"   " Hostname  : $(hostname --fqdn ) "
+          printf "$magenta" " No of CPU on Server :  $(cat /proc/cpuinfo |grep -i processor|wc -l)"
+
+        printf "$cyan"  " Usage on the Host "
+         sar 1 4
+         ps -eo pid,user,cmd,%cpu  --sort=-%cpu | head -5  2>/dev/null;;
+
+    "2") echo -e  "\n*********  Memory  Consuming Process  *****\n"
+             printf "$green"   " Hostname  : $(hostname --fqdn )"
+
+                 free -m |awk 'NR==1, NR==2{print $0}'
+
+              printf "$cyan"  " Usage on the Host "
+                ps -eo pid,user,cmd,%mem  --sort=-%mem | head -10   2>/dev/null;;
+
+    "3") echo -e  "\n*********   Swap details  *****\n"
+                 printf "$green"   "Hostname  : $(hostname --fqdn ) "
+                free -m |awk 'NR==1; END{print}'
+                printf "$cyan"  "Usage \n"
+        (echo " COMM PID SWAP  "; for file in /proc/*/status ; do awk '/^Pid|VmSwap|Name/{printf $2 " " $3}END{ print ""}' $file; done | grep kB | grep -wv "0 kB" | sort -k 3 -n -r |head -10) | column -t
+;;
+"4") echo -e  "\n*********Filesystem*****\n"
+
+                printf "$green"   "Hostname  : $(hostname --fqdn ) "
+                df -h|grep -v net 2>/dev/null
+;;
+
+"5") echo -e  "\n*********Last 10   Patch***************\n"
+                 printf "$green"   "Hostname  : $(hostname --fqdn ) "
+                printf "\nKernel Detials : $(uname -a)\n"
+                printf "\nOS Details : $(cat /etc/redhat-release )\n"
+                rpm -qa --last|tac|tail -10;;
+
+"6") echo -e  "\n*********Service Status ***************\n"
+                   printf "$green"   "Hostname  : $(hostname --fqdn ) "
+                OS=`cat /etc/redhat-release|awk '{print $7}'|awk -F . '{print $1}'`
+
+if [ "$OS" == "7" ]; then
+
+echo " "
+printf "$magenta" "Status CROND "
+systemctl status crond| awk 'NR==3, NR==4 {print $0}'
+printf "$magenta" "Status NTPD "
+systemctl status ntpd|awk 'NR==3, NR==4 {print $0}'
+printf "$magenta" "Status RSYSLOG "
+
+systemctl status rsyslog|awk 'NR==3, NR==6 {print $0}'
+echo " "
+
+elif [ "$OS" == "6" ]; then
+
+echo " "
+printf "$magenta" "Status CROND "
+/etc/init.d/crond  status
+printf "$magenta" "Status NTPD "
+/etc/init.d/ntpd   status
+printf "$magenta" "Status RSYSLOG "
+ /etc/init.d/rsyslog  status
+echo " "
+
+elif [ "$OS" == "5" ]; then
+
+echo " "
+printf "$magenta" "Status CROND "
+/etc/init.d/crond  status
+printf "$magenta" "Status NTPD "
+/etc/init.d/ntpd   status
+printf "$magenta" "Status RSYSLOG "
+ /etc/init.d/rsyslog  status
+
+echo " "
+fi
+;;
+"7") echo -e  "\n*********Reboot Information& OS Details*************\n"
+              printf "$green"   "Hostname  : $(hostname --fqdn ) "
+              printf "Uptime detials & Load average  :\n $(uptime )\n"
+               #printf "$cyan"    "iUp Report "
+              #printf "\n Reboot detials  :\n $(cat /var/log/iMod/REPORTS/iUp.report |tail --3 )\n"
+              printf "$cyan"    "iDOWN Report "
+              printf "Reboot detials  :\n $(cat /var/log/iMod/REPORTS/iDown.report |tail -8)\n"
+              printf "\nKernel Detials : $(uname -a)\n"
+              printf "\nOS Details : $(cat /etc/redhat-release )\n"
+;;
+
+
+"8") echo -e  "\n******* Readonly Check *************\n"
+              H=$(hostname)
+cat /proc/mounts |grep -v tmpfs |egrep " ro,|,ro "
+if [ "$?" -eq "0" ]
+then
+ echo "$H is Read only "
+else
+echo "$H is Good"
+fi
+;;
+
+
+
+
+*)
+      echo "Enter From One of the Option Given \n"
+      echo "Please re-run Script"
+     # return menu() # Command to come out of the program with status 1
+
+esac
