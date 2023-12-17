@@ -1,0 +1,50 @@
+echo -e "\n***************Server Health Check *****************************************\n"
+echo -e "\n1. CPU Usage \n2. Memory \n3. Swap space \n4. Filesystem Status  \n5. Exit"
+echo -n " Please Enter the Choice from Above List $(hostname): "
+read Input
+
+#Shell Colour code
+green='\e[1;32m%s\e[0m\n'
+magenta='\e[1;35m%s\e[0m\n'
+red='\e[1;31m%s\e[0m\n'
+cyan='\e[1;36m%s\e[0m\n'
+echo -e "\n********************************************************\n"
+
+
+case "$Input" in
+    "1") echo -e  "\n*********  CPU IDLE & Top Consuming Process  *****\n"
+          printf "$green"   " Hostname  : $(hostname --fqdn ) "
+          printf "$magenta" " No of CPU on Server :  $(cat /proc/cpuinfo |grep -i processor|wc -l)"
+
+        printf "$cyan"  " CPU Usage on the Host: $(cat /proc/loadavg | awk '{print $3}'|cut -f 1 -d ".") "
+         ps -eo pid,user,cmd,%cpu  --sort=-%cpu | head -5  2>/dev/null;;
+
+    "2") echo -e  "\n*********  Memory  Consuming Process  *****\n"
+             printf "$green"   " Hostname  : $(hostname --fqdn )"
+
+                 free -m |awk 'NR==1, NR==2{print $0}'
+
+              printf "$cyan"  " Usage on the Host "
+                ps -eo pid,user,cmd,%mem  --sort=-%mem | head -10   2>/dev/null;;
+
+    "3") echo -e  "\n*********   Swap details  *****\n"
+                 printf "$green"   "Hostname  : $(hostname --fqdn ) "
+                free -m |awk 'NR==1; END{print}'
+                printf "$cyan"  "Usage \n"
+        (echo " COMM PID SWAP  "; for file in /proc/*/status ; do awk '/^Pid|VmSwap|Name/{printf $2 " " $3}END{ print ""}' $file; done | grep kB | grep -wv "0 kB" | sort -k 3 -n -r |head -10) | column -t;;
+    "4") echo -e  "\n*********Filesystem*****\n"
+#                DISKUSG=$(df -Ph | grep -vE '^tmpfs|cdrom' | sed s/%//g | awk '{ if($5 > 10) print $0;}')
+                printf "$red"  "Filesystem Usage on Local FS"
+                df -Ph | grep -vE '^tmpfs|cdrom' | sed s/%//g | awk '{ if($5 > 10) print $0;}'
+;;
+"5") echo -e  "\n********Exiting From Script******\n"
+
+                sleep 10
+                                exit 0;;
+
+
+*)
+      echo -e "Enter From One of the Option Given from 1-5 \n"
+      echo -e "Please re-run Script"
+esac
+
