@@ -1,0 +1,141 @@
+# Source FUNCTIONS
+base=$(echo $0| xargs /usr/bin/dirname)
+. $base/FUNCTIONS
+
+#############
+# VARIABLES #
+#############
+SCRIPTS=$BASE/Scripts/App_Installs
+RPMS="curl chef"
+
+#############
+# FUNCTIONS #
+#############
+
+#----------------------------------------------------------------------------
+# Function to give usage message.
+#
+USAGE() {
+echo
+echo "$0 -a -i -u -v [VERSION]"
+echo
+echo -e " a = Audit"
+echo -e " i = Install"
+echo -e " u = Uninstall"
+echo -e " v = Version (OPTIONAL)"
+}
+
+#----------------------------------------------------------------------------
+# Function to List RPM from Repo.
+#
+Audit () {
+HPOO=YES
+CURL=YES
+wchefv=$(sudo curl -sL -D /dev/null "https://www.chef.io/chef/metadata?v=&prerelease=false&nightlies=false&p=el&pv=$OS&m=x86_64" | awk '/^url/ {print $NF}'| awk -F/ '{print $NF}')
+WCHEFV=$(echo $wchefv| sed -e 's/chef-//g' -e 's/.x86_64.rpm//g')
+#
+# RPM Check
+#
+CHEF=YES
+for RPM in `echo $RPMS`
+do
+ rpm -q $RPM > /dev/null
+ if [ $? -eq 0 ]; then
+  if [ $RPM = chef ]; then
+   ICHEFV=$(rpm -q --queryformat "%{version}-%{release}\n" $RPM)
+   echo -e "[+]\t$RPM ($ICHEFV) is installed. Highest available is ($WCHEFV)."
+  else
+   RVERSION=$(rpm -q --queryformat "%{version}\n" $RPM)
+   echo -e "[+]\t$RPM ($RVERSION) is installed."
+  fi
+ else
+  echo -e "[x]\t$RPM is NOT installed."
+  HPOO=NO
+  if [ $RPM = curl ]; then
+   CURL=NO
+  fi
+ fi
+done
+
+if [ $HPOO = "NO" ]; then
+ echo -e "[x]\tHPOO:CHEF:NOT_Installed"
+elif [ $HPOO = "YES" ]; then
+ echo -e "[+]\tHPOO:CHEF:Installed"
+fi
+}
+
+#----------------------------------------------------------------------------
+# Function to Install
+#
+Install () {
+Audit
+#
+# Curl
+#
+if [ $CURL = NO ]; then
+ Download_OSRepo
+ echo -e "[-]\tCleaning yum REPOs."
+ yum clean all
+ echo -e "[-]\tInstalling curl from REPO $REPO."
+ yum --disablerepo="*" --enablerepo="$REPO" -qy install curl
+ Remove_OSRepo
+fi
+#
+# CHEF
+#
+if [ $WCHEFV = $ICHEFV ]; then
+ echo -e "[*]\tNothing to do."
+else
+ echo -e "[-]\tInstalling chef."
+ if [ -z $VERSION ]; then
+  cd /tmp && curl -L https://www.chef.io/chef/install.sh | sudo bash
+ else
+  cd /tmp && curl -L https://www.chef.io/chef/install.sh | sudo bash -s -- -v $VERSION
+ fi
+ Audit
+fi
+}
+
+#----------------------------------------------------------------------------
+# Function to Uninstall
+#
+Uninstall () {
+Audit
+if [ $HPOO = YES ]; then
+ echo -e "[-]\tRemoving chef."
+ rpm -e chef
+ Audit
+else
+ echo -e "[*]\tNothing to do."
+fi
+}
+
+#############################################
+# Start
+#############################################
+Check_ID
+unset ACTION
+while getopts aiuv: option
+do
+ case $option in
+  a) export ACTION=Audit
+     ;;
+  i) export ACTION=Install
+     ;;
+  u) export ACTION=Uninstall
+     ;;
+  v) export VERSION=$OPTARG
+     ;;
+  *) USAGE; exit 2
+     ;;
+ esac
+done
+
+if [ -z $ACTION ] ; then
+ USAGE; exit 2
+else
+ $ACTION
+fi
+#############################################
+# End
+#############################################

@@ -1,0 +1,60 @@
+# Function to test that the user is root.
+#
+Check_ID()
+{
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo "$ID, you must be root to run this program."
+   exit 1
+fi
+}
+
+# Variables
+HOSTNAME=$(hostname)
+Auth=$(awk -F = '/^group/ {print $1}' /etc/nsswitch.conf |  awk '{ print $3 }')
+SSS=sss
+WIN=winbind
+#EXCLUDE=$(echo "^root|^sync|^shutdown|^halt|^news")
+#LOC="LocalUser"
+#AD="ADgroup"
+
+# Function to audit the contents of a server.
+#
+
+# Function to audit local users
+#LocalUsers() {
+#for USER in `grep -v nologin /etc/passwd| awk -F: '{print $1}'| grep -vE "$EXCLUDE"`
+#do
+# echo "$HOSTNAME|$LOC|$USER"
+#done
+#}
+
+# Function to audit AD groups
+ADUsers()
+{
+if [[ $Auth = $WIN ]] then
+        TACCESS=$(awk -F = '/^require_membership_of/ {print $2}' /etc/security/pam_winbind.conf| cut -d= -f2| sed 's/,/ /g')
+elif [[ $Auth = $SSS ]] then
+        TACCESS=$(awk -F = '/^simple_allow/ {print $2}' /etc/sssd/sssd.conf| cut -d= -f2| sed 's/,/ /g')
+else
+        echo -n "Server is not configured with sssd or winbind authentication, please check manual"
+fi
+for i in `echo $TACCESS`
+do
+ echo "|$HOSTNAME|$i"
+done
+}
+
+#############################################
+# Start
+#############################################
+
+Check_ID
+#LocalUsers
+ADUsers
+
+#set +x
+#############################################
+# End
+#############################################
+#echo "|DONE|"

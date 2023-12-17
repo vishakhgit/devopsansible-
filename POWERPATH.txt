@@ -1,0 +1,126 @@
+#!/bin/bash
+#Script to install PowerPath and HBA Firmware version
+#
+# Sreeni Vengala 11.02.2017 - Version 1.0
+#####################################################################################################
+# Function to test that the user is root
+Check_ID()
+{
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo "$ID, you must be root to run this program."
+   exit 1
+fi
+}
+# Function to check Product
+Check_Product()
+{
+HOSTNAME=$(hostname)
+VHW=$(dmidecode | grep -i product | grep -i VMware |awk '{print $3}')
+if [[ $VHW = "VMware" ]]; then
+   echo "$HOSTNAME" is a Virtual Machine and it does not required any PowerPath Software
+   exit 1
+ else
+  Check_Variable
+fi
+}
+
+#Variable Declaration
+Check_Variable ()
+{
+Sourcepath="/net/cn-flor-nas01-prod.wdw.disney.com/data/TPR/WDW/Vol005/WDPRTHome/V/VENGS002/EMC"
+OSVer=$(cat /etc/redhat-release |awk '{print $7}'|cut -d "." -f1)
+PPVer=$(powermt version |awk '{print $7}' |cut -d "." -f1)
+PPVer_r=$(rpm -qa | grep -i EMCpower | cut -d "-" -f2 |cut -d "." -f1)
+PHW=$(dmidecode | grep -i product | grep -i ProLiant |awk '{print $3}'|uniq)
+Firm=$(inq -hba |egrep 'firmware'|uniq|awk '{print $3}')
+DB=$(ps -ef | grep -i pmon | wc -l)
+}
+##Function to check OS Version
+#
+Check_OS(){
+  if [[ $OSVer -eq 5 ]]; then
+   Install_RHEL5_PP
+  elif [[ $OSVer -eq 6 ]]; then
+   Install_RHEL6_PP
+  elif [[ $OSVer -eq 7 ]]; then
+   Install_RHEL7_PP
+fi
+}
+#RHEL5 PowerPath Instllation
+Install_RHEL5_PP(){
+   if [[ $PHW = "ProLiant" ]]; then
+    if [[ $PPVer_r -eq 5 ]]; then
+     if [[ $DB -le 1 ]]; then
+echo "[-] Preparing to Install PowerPath to latest Version"
+cd $Sourcepath
+./pp_upgrade_backupfiles.sh
+mv /etc/init.d/PowerPath /tmp
+rpm -Uvh EMCPower.LINUX-6.2.0.00.00-051.RHEL5.x86_64.rpm
+    else
+     echo "[-] Databases needs to be stopped, can't proceed,Please contact DBA"
+     exit 1
+    fi
+    else
+    echo "[-] $HOSTNAME does not required PowerPath upgrade"
+      /sbin/powermt version
+    fi
+  else
+    echo "[-] Installation has skipped. This does not required PowerPath Instllation"
+    exit 1
+fi
+}
+#RHEL6 PowerPath Instllation
+Install_RHEL6_PP(){
+   if [[ $PHW = "ProLiant" ]]; then
+    if [[ $PPVer_r -eq 5 ]]; then
+      if [[ $DB -le 1 ]]; then
+echo "[-] Preparing to Install PowerPath to latest Version"
+cd $Sourcepath
+./pp_upgrade_backupfiles.sh
+mv /etc/init.d/PowerPath /tmp
+rpm -Uvh EMCPower.LINUX-6.2.0.00.00-051.RHEL6.x86_64.rpm
+   else
+    echo "[-] Databases needs to be stopped, can't proceed,Please contact DBA"
+    exit 1
+    fi
+   else
+    echo "[-] $HOSTNAME does not required PowerPath upgrade"
+      /sbin/powermt version
+    fi
+else
+    echo "[-] Installation has skipped. $HOSTNAME does not required PowerPath Instllation"
+fi
+}
+#
+##RHEL7 PowerPath Instllation
+Install_RHEL7_PP(){
+   if [[ $PHW = "ProLiant" ]]; then
+    if [[ $PPVer_r -eq 5 ]]; then
+      if [[ $DB -le 1 ]]; then
+echo "[-] Preparing to Install PowerPath to latest Version"
+cd $Sourcepath
+./pp_upgrade_backupfiles.sh
+mv /etc/init.d/PowerPath /tmp
+rpm -Uvh EMCPower.LINUX-6.2.0.00.00-051.RHEL7.x86_64.rpm
+   else
+    echo "[-] Databases needs to be stopped, can't proceed,Please contact DBA"
+    exit 1
+    fi
+   else
+    echo "[-] $HOSTNAME does not required PowerPath upgrade"
+      /sbin/powermt version
+    fi
+else
+    echo "[-] Installation has skipped. $HOSTNAME does not required PowerPath Instllation"
+fi
+}
+#############################################
+# Start
+#############################################
+Check_ID
+Check_Product
+#Check_Variable
+Check_OS
+#############################################
+# End

@@ -1,0 +1,95 @@
+# Function to test that the user is root.
+#
+Check_ID()
+{
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo "$ID, you must be root to run this program."
+   exit 1
+fi
+}
+
+# Function to declare variables
+#
+Declare_Variables()
+{
+HOST=$(hostname)
+LLDumpFile="/tmp/LLDumps"
+}
+
+# Function to create dump of Last Logins
+#
+Create_LLDumps()
+{
+if [ -f $LLDumpFile ]; then
+        rm -rf $LLDumpFile
+else
+        echo "" > $LLDumpFile
+fi
+
+wTMPLogs=($(ls /var/log/wtmp* | tac))
+
+for dumpLogs in ${wTMPLogs[*]}; do
+/usr/bin/utmpdump $dumpLogs 2>/dev/null >> $LLDumpFile
+done
+}
+
+# Function to grep uniq user ID
+#
+User_List()
+{
+USERS=($(cat $LLDumpFile | awk -F[ '{print $5}'| sed 's/]//g' | sort | uniq | egrep -v 'root|reboot|shutdown|sync|halt|runlevel|LOGIN'))
+}
+
+
+# Function to grep last login of user ID
+#
+Last_Login()
+{
+for LogedUser in ${USERS[*]}; do
+LOGIN=`cat $LLDumpFile | grep $LogedUser | tail -1 |awk -F[ '{print $9}'| sed 's/]//g'`
+ID_Type
+echo "|$HOST|$LogedUser|$AccType|$LOGIN|"
+done
+}
+
+
+# Function to identify user is local or AD
+#
+ID_Type()
+{
+if cat /etc/passwd | grep -q $LogedUser; then
+        AccType="Local ID"
+else
+        AccType="Domain ID"
+fi
+
+}
+
+
+
+# Function to remove the Last Login Dump file
+#
+Remove_Dumps()
+{
+if [ -f $LLDumpFile ]; then
+        rm -rf $LLDumpFile
+fi
+}
+
+
+
+#############################
+#           START           #
+#############################
+Check_ID
+Declare_Variables
+Create_LLDumps
+User_List
+Last_Login
+Remove_Dumps
+#############################
+#            END            #
+#############################
+echo "|DONE|"
+

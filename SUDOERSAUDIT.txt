@@ -1,0 +1,72 @@
+#############
+# VARIABLES #
+#############
+HOSTNAME=$(hostname)
+SUDOC=0
+
+#############
+# FUNCTIONS #
+#############
+#----------------------------------------------------------------------------
+# Function to test that the user is root.
+#
+Check_ID()
+{
+ID=$(/usr/bin/whoami)
+if [ $ID != "root" ]; then
+   echo "$ID, you must be root to run this program."
+   exit 1
+fi
+}
+
+#----------------------------------------------------------------------------
+# Function to audit.
+#
+Audit()
+{
+LOCAL=$(grep -v nologin /etc/passwd| grep -vE "^root|^sync|^shutdown|^halt"| cut -d: -f1| sort -u)
+taccess=$(awk -F = '/^require_membership_of/ {print $2}' /etc/security/pam_winbind.conf| sed 's/,/\n/g'| tr '[:upper:]' '[:lower:]'| sort -u)
+TACCESS=$(echo $taccess $LOCAL)
+#
+# Sudoers.d check.
+#
+COUNT=$(ls /etc/sudoers.d| wc -l)
+if [ $COUNT -gt 0 ]; then
+ FILES="/etc/sudoers /etc/sudoers.d/*"
+else
+ FILES="/etc/sudoers"
+fi
+
+for i in `echo $TACCESS`
+do
+ TEST=$(grep -hv "\#" $FILES| grep -iE "^$i|^%$i")
+ if [ ! -z $TEST ]; then
+ # SUDO=$(grep -hvE "^#|^$" $FILES| grep -iE "^$i|^%$i"| sort -u| sed '{:q;N;s/\n/ /g;t q}')
+  SUDO=$(grep -hvE "^#|^$" $FILES| grep -iE "^$i|^%$i"| sort -u)
+  SUDOC=$(echo "$SUDO"| wc -l)
+ else
+  SUDO=$(echo "no sudo")
+ fi
+ #
+ # If there are multiple lines for one AD group or ID, seperate them.
+ #
+ if [ $SUDOC -gt 0 ]; then
+  echo "$SUDO"| while read LINE
+  do
+   echo "|$HOSTNAME|$i|$LINE"| xargs
+  done
+ else
+  echo "|$HOSTNAME|$i|$SUDO"| xargs
+ fi
+done
+}
+
+#############################################
+# Start
+#############################################
+Check_ID
+Audit
+#############################################
+# End
+#############################################
+echo "|DONE|"
